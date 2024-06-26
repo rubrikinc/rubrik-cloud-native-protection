@@ -99,8 +99,7 @@ python3 rubrik_eks_cluster_private.py \
     --master-role-arn <YOUR_MASTER_ROLE_ARN> \
     --worker-node-role-arn <YOUR_WORKER_NODE_ROLE_ARN> \
     --worker-node-instance-profile-arn <YOUR_WORKER_NODE_INSTANCE_PROFILE_ARN> \
-    --cross-account-role <YOUR_CROSS_ACCOUNT_ROLE_ARN> \
-    --node-type <YOUR_NODE_TYPE>
+    --cross-account-role <YOUR_CROSS_ACCOUNT_ROLE_ARN>
 ```
 
 ### Parameter Descriptions
