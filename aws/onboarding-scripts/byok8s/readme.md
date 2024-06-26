@@ -117,4 +117,4 @@ python3 rubrik_eks_cluster_private.py \
 -   --worker-node-role-arn: The ARN of the worker node IAM role.
 -   --worker-node-instance-profile-arn: The ARN of the worker node instance profile.
 -   --cross-account-role: The ARN of the cross-account role.
--   --node-type: The type of EC2 instance for your worker nodes (e.g., c5.large).
+-   --node-type: The type of EC2 instance for your worker nodes (e.g., m5.2xlarge).
