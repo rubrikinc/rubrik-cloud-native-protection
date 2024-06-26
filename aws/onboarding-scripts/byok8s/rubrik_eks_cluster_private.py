@@ -2,16 +2,16 @@
 import argparse
 import base64
 import os
-from os.path import expanduser
 import time
+from os.path import expanduser
 from typing import List, Optional
 
 import arnparse
 import boto3
 import botocore
+import yaml
 from kubernetes import client
 from kubernetes import config
-import yaml
 
 # userData attached with the launch configuration to be run on starting of the
 # worker nodes.
@@ -169,11 +169,11 @@ class AwsHypervisorManager:
     """AWS Hypervisor Manager class."""
 
     def __init__(
-        self,
-        access_key_id: str,
-        secret_key_id: str,
-        session_token: str,
-        region: str
+            self,
+            access_key_id: str,
+            secret_key_id: str,
+            session_token: str,
+            region: str
     ):
         """Create a hypervisor manager for AWS.
 
@@ -280,11 +280,11 @@ class AwsHypervisorManager:
         return str(self.sts.get_caller_identity().get('Account'))
 
     def create_security_group(
-        self,
-        name: str,
-        description: str,
-        vpc_id: str,
-        tag_specifications: List[dict] = []
+            self,
+            name: str,
+            description: str,
+            vpc_id: str,
+            tag_specifications: List[dict] = []
     ) -> str:
         """Creates security group
 
@@ -308,11 +308,11 @@ class AwsHypervisorManager:
 
     @staticmethod
     def get_security_group_ip_permission(
-        description: str,
-        security_group_id: str,
-        ip_protocol: str,
-        from_port: Optional[int] = None,
-        to_port: Optional[int] = None,
+            description: str,
+            security_group_id: str,
+            ip_protocol: str,
+            from_port: Optional[int] = None,
+            to_port: Optional[int] = None,
     ) -> dict:
         """
 
@@ -340,7 +340,7 @@ class AwsHypervisorManager:
         return ip_permission
 
     def authorize_security_group_ingress(
-        self, group_id: str, ip_permissions: List[dict]
+            self, group_id: str, ip_permissions: List[dict]
     ) -> None:
         """Authorizes ingress for security group
 
@@ -362,7 +362,7 @@ class AwsHypervisorManager:
             raise
 
     def authorize_security_group_egress(
-        self, group_id: str, ip_permissions: List[dict]
+            self, group_id: str, ip_permissions: List[dict]
     ) -> None:
         """Authorizes egress for security group
 
@@ -384,14 +384,14 @@ class AwsHypervisorManager:
             raise
 
     def create_cluster(
-        self,
-        name: str,
-        version: str,
-        role_arn: str,
-        subnet_ids: List[str],
-        cluster_security_group_id: str,
-        cluster_private_endpoint_enabled: bool,
-        public_access_cidrs: List[str]
+            self,
+            name: str,
+            version: str,
+            role_arn: str,
+            subnet_ids: List[str],
+            cluster_security_group_id: str,
+            cluster_private_endpoint_enabled: bool,
+            public_access_cidrs: List[str]
     ) -> (str, str, str, str):
         """Creates EKS cluster
 
@@ -465,16 +465,16 @@ class AwsHypervisorManager:
             raise
 
     def create_launch_template(
-        self,
-        name: str,
-        block_device_mappings: List,
-        ami_id: str,
-        node_type: str,
-        user_data: str,
-        instance_profile_arn: str,
-        security_group: str,
-        instance_metadata_options: dict,
-        key_name: Optional[str] = None
+            self,
+            name: str,
+            block_device_mappings: List,
+            ami_id: str,
+            node_type: str,
+            user_data: str,
+            instance_profile_arn: str,
+            security_group: str,
+            instance_metadata_options: dict,
+            key_name: Optional[str] = None
     ) -> str:
         """Creates launch template for worker nodes
 
@@ -517,14 +517,14 @@ class AwsHypervisorManager:
             raise
 
     def create_autoscaling_group(
-        self,
-        name: str,
-        launch_template_id: str,
-        min_size: int,
-        max_size: int,
-        desired_capacity: int,
-        vpc_zone_identifier: str,
-        cluster_name: str
+            self,
+            name: str,
+            launch_template_id: str,
+            min_size: int,
+            max_size: int,
+            desired_capacity: int,
+            vpc_zone_identifier: str,
+            cluster_name: str
     ) -> None:
         """Creates autoscaling group
 
@@ -567,10 +567,10 @@ Returns:
 
 
 def authorize_security_group_ingress_egress(
-    aws_manager: AwsHypervisorManager,
-    cluster_security_group_id: str,
-    node_security_group_id: str,
-    jumpbox_security_group_id: str
+        aws_manager: AwsHypervisorManager,
+        cluster_security_group_id: str,
+        node_security_group_id: str,
+        jumpbox_security_group_id: str
 ) -> None:
     """Authorizes ingress/egress between cluster plane and worker nodes
 
@@ -655,10 +655,10 @@ def authorize_security_group_ingress_egress(
 
 
 def setup_security_groups(
-    aws_manager: AwsHypervisorManager,
-    vpc_id: str,
-    prefix: str,
-    jumpbox_security_group_id: str
+        aws_manager: AwsHypervisorManager,
+        vpc_id: str,
+        prefix: str,
+        jumpbox_security_group_id: str
 ) -> (str, str):
     """Setup security groups for cluster and worker
 
@@ -696,14 +696,14 @@ def setup_security_groups(
 
 
 def create_eks_cluster(
-    aws_manager: AwsHypervisorManager,
-    security_group_id: str,
-    subnet_ids: List[str],
-    prefix: str,
-    version: str,
-    role_arn: str,
-    cluster_private_endpoint_enabled: bool,
-    restrict_cluster_public_endpoint_access: bool
+        aws_manager: AwsHypervisorManager,
+        security_group_id: str,
+        subnet_ids: List[str],
+        prefix: str,
+        version: str,
+        role_arn: str,
+        cluster_private_endpoint_enabled: bool,
+        restrict_cluster_public_endpoint_access: bool
 ) -> (str, str, str, str):
     """Creates EKS clusters
 
@@ -759,12 +759,12 @@ https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html#vpc-dns-hostnames
 
 
 def get_user_data(
-    cluster_name: str,
-    certificate_authority: str,
-    cluster_endpoint: str,
-    domain_name: str,
-    is_network_proxy_supported: bool = False,
-    is_imdsv2_supported: bool = True
+        cluster_name: str,
+        certificate_authority: str,
+        cluster_endpoint: str,
+        domain_name: str,
+        is_network_proxy_supported: bool = False,
+        is_imdsv2_supported: bool = True
 ) -> str:
     """User data for launch template
 
@@ -796,15 +796,15 @@ def get_user_data(
 
 
 def setup_launch_template(
-    aws_manager: AwsHypervisorManager,
-    cluster_name: str,
-    certificate_authority: str,
-    cluster_endpoint: str,
-    region: str,
-    prefix: str,
-    instance_profile_arn: str,
-    worker_node_security_group: str,
-    node_type: str
+        aws_manager: AwsHypervisorManager,
+        cluster_name: str,
+        certificate_authority: str,
+        cluster_endpoint: str,
+        region: str,
+        prefix: str,
+        instance_profile_arn: str,
+        worker_node_security_group: str,
+        node_type: str
 ) -> str:
     """Setup launch template for woker nodes
 
@@ -881,10 +881,10 @@ def strip_paths_from_arn(arn: str) -> str:
 
 
 def persist_kubectl_configuration(
-    cluster_endpoint: str,
-    cluster_certificate_authority: str,
-    cluster_name: str,
-    cluster_arn: str
+        cluster_endpoint: str,
+        cluster_certificate_authority: str,
+        cluster_name: str,
+        cluster_arn: str
 ) -> str:
     """Persist kubectl configuration to a file for kubectl commands.
 
@@ -955,7 +955,7 @@ def persist_kubectl_configuration(
 
 
 def get_config_map(
-    worker_node_role_arn: str, cross_account_role_arn: str
+        worker_node_role_arn: str, cross_account_role_arn: str
 ) -> client.V1ConfigMap:
     """Setup config map for connecting worker nodes to EKS cluster
 
@@ -993,12 +993,12 @@ def get_config_map(
 
 
 def connect_worker_nodes_to_cluster(
-    worker_node_role_arn: str,
-    cross_account_role_arn: str,
-    cluster_endpoint: str,
-    cluster_certificate_authority: str,
-    cluster_name: str,
-    cluster_arn: str
+        worker_node_role_arn: str,
+        cross_account_role_arn: str,
+        cluster_endpoint: str,
+        cluster_certificate_authority: str,
+        cluster_name: str,
+        cluster_arn: str
 ) -> None:
     """Connect worker nodes to EKS cluster.
 
@@ -1043,19 +1043,19 @@ def connect_worker_nodes_to_cluster(
 
 
 def setup_customer_exocompute(
-    aws_access_key: str,
-    aws_secret_key: str,
-    aws_session_id: str,
-    aws_region: str,
-    vpc_id: str,
-    jumpbox_security_group_id: str,
-    subnet_ids: List[str],
-    prefix: str,
-    master_role_arn: str,
-    worker_node_role_arn: str,
-    worker_node_instance_profile_arn: str,
-    cross_account_role: str,
-    node_type: str = NODE_TYPE
+        aws_access_key: str,
+        aws_secret_key: str,
+        aws_session_id: str,
+        aws_region: str,
+        vpc_id: str,
+        jumpbox_security_group_id: str,
+        subnet_ids: List[str],
+        prefix: str,
+        master_role_arn: str,
+        worker_node_role_arn: str,
+        worker_node_instance_profile_arn: str,
+        cross_account_role: str,
+        node_type: str = NODE_TYPE
 ) -> str:
     """Setup security groups for cluster and worker
 
@@ -1096,8 +1096,11 @@ def setup_customer_exocompute(
 
         # 2. Create EKS Cluster
         cluster_name, cluster_arn, cluster_endpoint, cluster_certificate_authority = create_eks_cluster(
-            aws_manager=aws_manager, security_group_id=cluster_security_group_id, subnet_ids=subnet_ids,
-            prefix=prefix, version=EKSK8s_VERSION, role_arn=master_role_arn,
+            aws_manager=aws_manager,
+            security_group_id=cluster_security_group_id,
+            subnet_ids=subnet_ids,
+            prefix=prefix, version=EKSK8s_VERSION,
+            role_arn=master_role_arn,
             cluster_private_endpoint_enabled=cluster_private_endpoint_enabled,
             restrict_cluster_public_endpoint_access=restrict_cluster_public_endpoint_access,
         )
