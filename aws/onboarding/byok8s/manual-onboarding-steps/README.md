@@ -16,7 +16,7 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 
 #### a. Create Security Group for EKS Cluster
 
-1. **Open the Amazon VPC console** [here](https://console.aws.amazon.com/vpc/) and choose `Security Groups`.
+1. **Open the Amazon** [VPC console](https://console.aws.amazon.com/vpc/) and choose `Security Groups`.
 2. **Create the security group with the following details**:
    - **Name tag**: Enter your desired security group name (e.g., `rubrik-cluster-security-group`)
    - **Description**: `Security group for EKS cluster plane`
@@ -70,18 +70,18 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 
 #### a. Create the EKS Cluster
 
-1. **Open the Amazon EKS console** [here](https://console.aws.amazon.com/eks/home) and choose **Add cluster**, then **Create**.
+1. **Open the Amazon** [EKS console](https://console.aws.amazon.com/eks/home) and choose **Add cluster**, then **Create**.
 2. **Configure the Cluster** and then next:
    - **Name**: Enter your desired cluster name (e.g., `rubrik-eks-cluster`)
    - **Kubernetes version**: `1.29`
    - **Cluster Service Role**: Select the IAM role created for EKS(e.g., `master-node-role-arn`).
    - **Cluster access**: ConfigMap
 3. **Specify networking** and then next:
-  - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
-  - **Subnet IDs**: Select the subnets under the vpc (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
-  - **Security Group**: Select your cluster security group (e.g., `sg-rubrik-cluster-security-group`)
-  - **Cluster IP address family**: IPv4
-  - **Cluster endpoint access**: Private
+   - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
+   - **Subnet IDs**: Select the subnets under the vpc (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
+   - **Security Group**: Select your cluster security group (e.g., `sg-rubrik-cluster-security-group`)
+   - **Cluster IP address family**: IPv4
+   - **Cluster endpoint access**: Private
 4. **Control plane logging** (can be left as default) and then next:
 5. **Select add-ons**  and then next:
    - CoreDNS
@@ -94,45 +94,88 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 
 #### a. Create Launch Template
 
-1. **Open the Amazon EC2 console** at https://console.aws.amazon.com/ec2/.
-2. **In the navigation pane**, choose `Launch Templates`.
-3. **Choose Create launch template**.
-4. **Enter the following details**:
+1. **Open the Amazon** [EC2 console](https://console.aws.amazon.com/ec2/) and choose `Launch Templates`.
+2. **Create launch template** with the following details:
    - **Launch template name**: Enter your desired template name (e.g., `rubrik-launch-template`)
-   - **AMI ID**: Fetch from SSM parameter (e.g., `ami-0123456789abcdef0`)
+   - **AMI ID**: Fetch from SSM parameter (Fetches the AWS recommended EKS worker node AMI ID from [here](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html) e.g., `ami-03d76896f1d3223f2`)
    - **Instance type**: Select your instance type (e.g., `m5.2xlarge`)
-   - **Key pair**: Select your existing key pair if SSH access is required.
    - **Security groups**: Choose your node security group (e.g., `sg-rubrik-node-security-group`)
-   - **User data**: Copy the user data content from the script.
-
-5. **Choose Create launch template**.
+   - **EBS Volume**: 
+     - Size (GiB): 60
+     - Volume type: gp3
+   - **Advanced details**:
+     - IAM instance profile: `worker-node-instance-profile-arn` (Replace with the exact arn value)
+     - Metadata version: V2 only (token required)
+     - Metadata response hop limit: 2
+   - **User data**: Copy the user data content from the script after replacing the following placeholders:
+     - domain-name: For us-east-1 region, domain-name is `compute.internal` and for all other regions, its `<region>.compute.internal`(e.g., eu-west-1.compute.internal). Follow the doc for [reference](https://docs.aws.amazon.com/vpc/latest/userguide/vpc-dns.html#vpc-dns-hostnames).
+     - eks-cluster-name: Cluster name created above(e.g., `rubrik-eks-cluster`)
+     - certificate-authority: Certificate authority of the cluster (`rubrik-eks-cluster`) created above
+     - api-server-endpoint:Api server endpoint of the cluster (`rubrik-eks-cluster`) created above
+       ```bash
+       #!/bin/bash
+       set -o xtrace
+     
+       host=$(hostname)
+       if [[ ${#host} -gt 63 ]]; then
+       hostnamectl set-hostname $(hostname | cut -d "." -f 1).<domain-name>
+       fi
+     
+       # Create loop devices, this is taken from CDM code:
+       # src/scripts/vmdkmount/make_loop.sh
+       NUM_LOOP_DEVICES=255
+       LOOP_REF="/dev/loop0"
+       if [ ! -e $LOOP_REF ]; then
+       /sbin/losetup -f
+       fi
+     
+       for ((i = 1; i < $NUM_LOOP_DEVICES; i++)); do
+       if [ -e /dev/loop$i ]; then
+       continue;
+       fi
+       mknod /dev/loop$i b 7 $i;
+       chown --reference=$LOOP_REF /dev/loop$i;
+       chmod --reference=$LOOP_REF /dev/loop$i;
+       done
+     
+       # Remove LVM on host, just to avoid any interference with containers.
+       yum remove -y lvm2
+     
+       # Source the env variables before running the bootstrap.sh script
+       set -a
+       source /etc/environment
+     
+       # https://github.com/awslabs/amazon-eks-ami/blob/master/files/bootstrap.sh
+       /etc/eks/bootstrap.sh <eks-cluster-name> --b64-cluster-ca <certificate-authority> --apiserver-endpoint <api-server-endpoint>
+       ```
 
 ### 4. Create Auto Scaling Group
 
 #### a. Create Auto Scaling Group
 
-1. **Open the Amazon EC2 console** at https://console.aws.amazon.com/ec2/.
-2. **In the navigation pane**, choose `Auto Scaling Groups`.
-3. **Choose Create Auto Scaling group**.
-4. **Enter the following details**:
+1. **Open the Amazon** [EC2 console](https://console.aws.amazon.com/ec2/) and choose `Auto Scaling Groups`.
+2. ** Create Auto Scaling group with the following details**:
    - **Auto Scaling group name**: Enter your desired group name (e.g., `rubrik-autoscaling-group`)
-   - **Launch template**: Select your launch template (e.g., `rubrik-launch-template (Latest version)`)
+   - **Launch template**: Select your launch template created above (e.g., `rubrik-launch-template (Latest version)`)
    - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
    - **Subnets**: Select your subnets (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
-   - **Set minimum/maximum size**: e.g., min=1, max=3, desired=1.
-
-5. **Choose Create Auto Scaling group**.
+   - **Set minimum/maximum size**: e.g., min=1, max=64, desired=1.
+   - **Add a tag**: 
+     - Key: kubernetes.io/cluster/<cluster-name> (e.g., `kubernetes.io/cluster/rubrik-eks-cluster`)
+     - Value: owned
+     - **Check** Tag new instances
 
 ### 5. Connect Worker Nodes to EKS Cluster
 
 #### a. Configure AWS Auth ConfigMap
 
 1. **Download and Configure kubectl**: Instructions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html).
-2. **Update kubeconfig File**:
-    ```bash
-    aws eks update-kubeconfig --region us-west-2 --name rubrik-eks-cluster
-    ```
-
+2. **Update kubeconfig File** by running the following command using AWS CLI:
+   - region: Region of cluster(e.g., us-west-2)
+   - name: Name of the cluster(e.g. `rubrik-eks-cluster`)
+   ```bash
+   aws eks update-kubeconfig --region <region> --name <name>
+   ```
 3. **Create the aws-auth ConfigMap**:
     ```yaml
     apiVersion: v1
