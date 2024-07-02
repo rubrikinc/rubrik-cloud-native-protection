@@ -176,32 +176,31 @@ This documentation outlines the steps to manually create an EKS cluster and asso
    ```bash
    aws eks update-kubeconfig --region <region> --name <name>
    ```
-3. **Create the aws-auth ConfigMap**:
-    ```yaml
-    apiVersion: v1
-    kind: ConfigMap
-    metadata:
-      name: aws-auth
-      namespace: kube-system
-    data:
-      mapRoles: |
-        - rolearn: arn:aws:iam::123456789012:role/eksNodegroupRole
-          username: system:node:{{EC2PrivateDNSName}}
-          groups:
-            - system:bootstrappers
-            - system:nodes
-        - rolearn: arn:aws:iam::123456789012:role/rubrik
-          username: rubrik
-          groups:
-            - system:masters
-    ```
-   - **Apply ConfigMap**:
-    ```bash
-    kubectl apply -f aws-auth-cm.yaml
-    ```
+3. **Create the aws-auth ConfigMap** 
+   - Create the 'aws-auth-cm.yaml' from below yaml after replacing the placeholders(worker-node-role-arn, cross-account-role):
+       ```yaml
+       apiVersion: v1
+       kind: ConfigMap
+       metadata:
+         name: aws-auth
+         namespace: kube-system
+       data:
+         mapRoles: |
+           - rolearn: <worker-node-role-arn>
+             username: system:node:{{EC2PrivateDNSName}}
+             groups:
+               - system:bootstrappers
+               - system:nodes
+           - rolearn: <cross-account-role>
+             username: rubrik
+             groups:
+               - system:masters
+       ```
+      - **Apply ConfigMap by running the following command**:
+       ```bash
+       kubectl apply -f aws-auth-cm.yaml
+       ```
 
 ### Conclusion
 
-By following these steps, you have successfully created an EKS cluster and configured the necessary resources manually.
-
-If you have any issues, refer to the AWS EKS [documentation](https://docs.aws.amazon.com/eks/index.html) or seek assistance from AWS support.
+You may also refer to the AWS EKS [documentation](https://docs.aws.amazon.com/eks/index.html) or seek assistance from Rubrik support.
