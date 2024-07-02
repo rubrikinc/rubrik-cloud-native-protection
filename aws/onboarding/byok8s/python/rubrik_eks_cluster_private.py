@@ -616,7 +616,7 @@ def authorize_security_group_ingress_egress(
             AwsHypervisorManager.get_security_group_ip_permission(
                 description="Inbound traffic from jump box",
                 security_group_id=jumpbox_security_group_id,
-                ip_protocol="-1"
+                ip_protocol="-1"  # it is set to -1 to allow all the ip protocol
             )
         ]
         aws_manager.authorize_security_group_ingress(
@@ -1092,14 +1092,19 @@ def setup_customer_exocompute(
 
         # 1. Setup security_groups
         cluster_security_group_id, node_security_group_id = setup_security_groups(
-            aws_manager=aws_manager, vpc_id=vpc_id, prefix=prefix, jumpbox_security_group_id=jumpbox_security_group_id)
+            aws_manager=aws_manager,
+            vpc_id=vpc_id,
+            prefix=prefix,
+            jumpbox_security_group_id=jumpbox_security_group_id
+        )
 
         # 2. Create EKS Cluster
         cluster_name, cluster_arn, cluster_endpoint, cluster_certificate_authority = create_eks_cluster(
             aws_manager=aws_manager,
             security_group_id=cluster_security_group_id,
             subnet_ids=subnet_ids,
-            prefix=prefix, version=EKSK8s_VERSION,
+            prefix=prefix,
+            version=EKSK8s_VERSION,
             role_arn=master_role_arn,
             cluster_private_endpoint_enabled=cluster_private_endpoint_enabled,
             restrict_cluster_public_endpoint_access=restrict_cluster_public_endpoint_access,
