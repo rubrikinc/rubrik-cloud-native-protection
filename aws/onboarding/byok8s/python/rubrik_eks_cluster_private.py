@@ -546,7 +546,7 @@ Returns:
                 AutoScalingGroupName=name,
                 LaunchTemplate={
                     'LaunchTemplateId': launch_template_id,
-                    'Version': '$Latest'
+                    'Version': '$Default'
                 },
                 MaxSize=max_size,
                 MinSize=min_size,
