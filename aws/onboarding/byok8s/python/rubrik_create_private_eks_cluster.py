@@ -1,4 +1,4 @@
-"""EKS Cluster Setup."""
+"""This Python script automates the setup of a private EKS cluster for Rubrik's exocompute use-case"""
 import argparse
 import base64
 import os

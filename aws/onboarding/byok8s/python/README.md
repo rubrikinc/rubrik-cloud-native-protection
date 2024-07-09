@@ -1,6 +1,6 @@
-# Script to setup EKS cluster
+# Steps to execute EKS cluster setup script
 
-This README provides detailed instructions to run the script using AWS keys and other necessary configurations. __The Kubernetes version used to setup EKS cluster in this script is `1.29`.__
+This README provides detailed instructions to run the script (rubrik_create_private_eks_cluster.py) using AWS keys and other necessary configurations. __The Kubernetes version used to setup EKS cluster in this script is `1.29`.__
 
 ## Prerequisites
 
@@ -87,7 +87,7 @@ Ensure you have Python 3.x installed on your jumpbox:
 Use the following sample command to run the script:
 
 ```sh
-python3 rubrik_eks_cluster_private.py \
+python3 rubrik_create_private_eks_cluster.py \
     --aws-access-key <YOUR_AWS_ACCESS_KEY_ID> \
     --aws-secret-key <YOUR_AWS_SECRET_ACCESS_KEY> \
     --aws-session-id <YOUR_AWS_SESSION_TOKEN> \
