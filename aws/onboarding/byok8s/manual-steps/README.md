@@ -32,34 +32,34 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 
 #### c. Authorize Security Group Ingress and Egress
 
-1. **Edit inbound rules for** `rubrik-cluster-security-group`.
-    - **Add the following rule** and save:
+1. **Edit inbound rules for** `rubrik-cluster-security-group` and save.
+    - **Add the following rule**:
         - **Type**: HTTPS
         - **Protocol**: TCP (Prefilled)
         - **Port range**: 443 (Prefilled)
         - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from worker nodes
-2. **Edit outbound rules for** `rubrik-cluster-security-group`.
-    - **Add the following rule** and save:
+2. **Edit outbound rules for** `rubrik-cluster-security-group` and save.
+    - **Add the following rule**:
         - **Type**: Custom TCP
         - **Protocol**: TCP (Prefilled)
         - **Port range**: `1025 - 65535`
         - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Outbound traffic to worker nodes
-3. **Edit inbound rules for** `rubrik-node-security-group`.
-    - **Add the following rule**and save:
+3. **Edit inbound rules for** `rubrik-node-security-group` and save.
+    - **Add the following rule**:
         - **Type**: All traffic
         - **Protocol**: All (Prefilled)
         - **Port range**: All (Prefilled)
         - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from worker nodes
-    - **Add the following rule** and save:
+    - **Add the following rule**:
         - **Type**: Custom TCP
         - **Protocol**: TCP (Prefilled)
         - **Port range**: `1025 - 65535`
         - **Source**: Custom, `rubrik-cluster-security-group` (Replace with actual Cluster Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from cluster control plane
-    - **Add the following rule** and save:
+    - **Add the following rule**:
         - **Type**: HTTPS
         - **Protocol**: TCP (Prefilled)
         - **Port range**: 443 (Prefilled)
