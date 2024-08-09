@@ -5,10 +5,10 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 ## Prerequisites:
 1. AWS CLI configured with necessary permissions.
 2. IAM Role with required policies.
-    - **Example ARN values** used to describe the steps below: `master-node-role-arn`, `worker-node-role-arn`, `cross-account-role`, `worker-node-instance-profile-arn`
+    - **Example ARN values** used to describe the steps below: `master-node-role-arn`, `worker-node-role-arn`, `cross-account-role-arn`, `worker-node-instance-profile-arn`
 3. Amazon VPC with subnets.
-    - **Example VPC** used to describe the steps below: `vpc-0123456789abcdef0`
-    - **Example subnets** used to describe the steps below: `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`
+    - **Example VPC** used to describe the steps below: `vpc-0123456789abcdef0`. **NOTE** VPC should be consistent in all the steps.
+    - **Example subnets** used to describe the steps below: `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`. **NOTE** subnets used under above VPC should be consistent in all the steps.
 
 ## Steps:
 
@@ -37,33 +37,33 @@ This documentation outlines the steps to manually create an EKS cluster and asso
         - **Type**: HTTPS
         - **Protocol**: TCP (Prefilled)
         - **Port range**: 443 (Prefilled)
-        - **Source**: Custom, `sg-rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
+        - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from worker nodes
 2. **Edit outbound rules for** `rubrik-cluster-security-group`.
     - **Add the following rule** and save:
         - **Type**: Custom TCP
         - **Protocol**: TCP (Prefilled)
         - **Port range**: `1025 - 65535`
-        - **Source**: Custom, `sg-rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
+        - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Outbound traffic to worker nodes
-3. **Edit inbound rules for** `sg-rubrik-node-security-group`.
-    - **Add the following rule**:
+3. **Edit inbound rules for** `rubrik-node-security-group`.
+    - **Add the following rule**and save:
         - **Type**: All traffic
         - **Protocol**: All (Prefilled)
         - **Port range**: All (Prefilled)
-        - **Source**: Custom, `sg-rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
+        - **Source**: Custom, `rubrik-node-security-group` (Replace with actual Node Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from worker nodes
-    - **Add the following rule**:
+    - **Add the following rule** and save:
         - **Type**: Custom TCP
         - **Protocol**: TCP (Prefilled)
         - **Port range**: `1025 - 65535`
-        - **Source**: Custom, `sg-rubrik-cluster-security-group` (Replace with actual Cluster Security Group ID created above from dropdown)
+        - **Source**: Custom, `rubrik-cluster-security-group` (Replace with actual Cluster Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from cluster control plane
     - **Add the following rule** and save:
         - **Type**: HTTPS
         - **Protocol**: TCP (Prefilled)
         - **Port range**: 443 (Prefilled)
-        - **Source**: Custom, `sg-rubrik-cluster-security-group` (Replace with actual Cluster Security Group ID created above from dropdown)
+        - **Source**: Custom, `rubrik-cluster-security-group` (Replace with actual Cluster Security Group ID created above from dropdown)
         - **Description**: Inbound traffic from cluster control plane
 
 ### 2. Create EKS Cluster
@@ -74,12 +74,12 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 2. **Configure the Cluster** and then next:
     - **Name**: Enter your desired cluster name (e.g., `rubrik-eks-cluster`)
     - **Kubernetes version**: `1.29`
-    - **Cluster Service Role**: Select the IAM role created for EKS (e.g., `master-node-role-arn`).
+    - **Cluster Service Role**: Select the IAM role (e.g., `master-node-role-arn`) under the cluster service role.
     - **Cluster access**: ConfigMap
 3. **Specify networking** and then next:
     - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
     - **Subnet IDs**: Select the subnets under the VPC (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
-    - **Security Group**: Select your cluster security group (e.g., `sg-rubrik-cluster-security-group`)
+    - **Security Group**: Select your cluster security group (e.g., `rubrik-cluster-security-group`)
     - **Cluster IP address family**: IPv4
     - **Cluster endpoint access**: Private
 4. **Control plane logging** (can be left as default) and then next:
@@ -99,8 +99,8 @@ This documentation outlines the steps to manually create an EKS cluster and asso
     - **Launch template name**: Enter your desired template name (e.g., `rubrik-launch-template`)
     - **AMI ID**: Fetch from SSM parameter (Fetches the AWS recommended EKS worker node AMI ID from [here](https://docs.aws.amazon.com/eks/latest/userguide/eks-optimized-ami.html) e.g., `ami-03d76896f1d3223f2`)
     - **Instance type**: Select your instance type (e.g., `m5.2xlarge`)
-    - **Security groups**: Choose your node security group (e.g., `sg-rubrik-node-security-group`)
-    - **EBS Volume**:
+    - **Security groups**: Choose your node security group (e.g., `rubrik-node-security-group`)
+    - **Update config under root EBS Volume to**:
         - Size (GiB): 60
         - Volume type: gp3
     - **Advanced details**:
@@ -120,8 +120,7 @@ This documentation outlines the steps to manually create an EKS cluster and asso
           if [[ ${#host} -gt 63 ]]; then
           hostnamectl set-hostname $(hostname | cut -d "." -f 1).<domain-name>
           fi
-   
-          # Create loop devices, this is taken from CDM code:
+
           # src/scripts/vmdkmount/make_loop.sh
           NUM_LOOP_DEVICES=255
           LOOP_REF="/dev/loop0"
@@ -158,10 +157,10 @@ This documentation outlines the steps to manually create an EKS cluster and asso
     - **Auto Scaling group name**: Enter your desired group name (e.g., `rubrik-autoscaling-group`)
     - **Launch template**: Select your launch template created above (e.g., `rubrik-launch-template (Latest version)`)
     - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
-    - **Subnets**: Select your subnets (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
+    - **Subnets**: Select the subnets under VPC used earlier (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
     - **Set minimum/maximum size**: e.g., min=1, max=64, desired=1.
     - **Add a tag**:
-        - Key: kubernetes.io/cluster/<cluster-name> (e.g., `kubernetes.io/cluster/rubrik-eks-cluster`)
+        - Key: kubernetes.io/cluster/\<cluster-name\> (e.g., `kubernetes.io/cluster/rubrik-eks-cluster`)
         - Value: owned
         - **Check** Tag new instances
 
@@ -171,13 +170,13 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 
 1. **Download and Configure kubectl**: Instructions can be found [here](https://docs.aws.amazon.com/eks/latest/userguide/install-kubectl.html).
 2. **Update kubeconfig File** by running the following command using AWS CLI:
-    - region: Region of cluster (e.g., us-west-2)
+    - region: Region of cluster (e.g., eu-west-1)
     - name: Name of the cluster (e.g., `rubrik-eks-cluster`)
    ```bash
    aws eks update-kubeconfig --region <region> --name <name>
    ```
 3. **Create the aws-auth ConfigMap** 
-   - Create the 'aws-auth-cm.yaml' from below yaml after replacing the placeholders(worker-node-role-arn, cross-account-role):
+   - Create the 'aws-auth-cm.yaml' from below yaml after replacing the placeholders(worker-node-role-arn, cross-account-role-arn):
        ```yaml
        apiVersion: v1
        kind: ConfigMap
@@ -191,7 +190,7 @@ This documentation outlines the steps to manually create an EKS cluster and asso
              groups:
                - system:bootstrappers
                - system:nodes
-           - rolearn: <cross-account-role>
+           - rolearn: <cross-account-role-arn>
              username: rubrik
              groups:
                - system:masters
