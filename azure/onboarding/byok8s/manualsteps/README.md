@@ -1,13 +1,23 @@
 # Documentation for Manually Creating an AKS Cluster for RSC Exocompute
-This documentation outlines the steps to manually create an AKS cluster and associated resources on Azure to be used as n exocompute cluster with RSC
+This documentation outlines the steps to manually create an AKS cluster and associated resources on Azure to be used as an exocompute cluster with RSC
 
 ## Prerequisites:
 1. Azure CLI configured with necessary permissions.
-2. Azure App Id and secret used to onboard exocompute feature in RSC via non-oauth flow.
+   Ensure this by executing the below command and selecting the right subscription.
+   ```
+   az login
+   ```
+3. Azure App Id and secret used to onboard exocompute feature in RSC via non-oauth flow.
 ## Variables:
 1. RESOURCE_GROUP - This should be same as the resource group used to onboard exocompute as the permissions are taken at resource group level.
 2. VNET_NAME - The name of VNET where the AKS cluster is to be created. This VNET should meet all the network pre-requisites needed for exocompute clusters.
-3. SUBNET_NAME - Subnet to be used for the AKS cluster.
+3. AKS_SUBNET_NAME - Subnet to be used for the AKS cluster.
+4. VNET_RESOURCE_GROUP - resource group of the VNET where the cluster is created.
+5. SP_APP_ID - App Id used to onboard subscription for exocompute feature via non-Oauth flow in RSC.
+6. SP_PASSWORD - Client secret used while onboarding subscription for exocompute via non-Oauth flow in RSC.
+7. CLUSTER_NAME - Desired name of the BYOK cluster.
+8. LOCATION - Azure region where the cluster is to be created.
+   
 ## Create Private AKS Cluster:
 Following are configuration we expect for the cluster.
 
