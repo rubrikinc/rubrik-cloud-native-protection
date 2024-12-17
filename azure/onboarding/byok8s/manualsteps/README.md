@@ -22,7 +22,7 @@ This documentation outlines the steps to manually create an AKS cluster and asso
 Following are configuration we expect for the cluster.
 
  - Starting node count with min-count of 1 and max-count of 64.
- - Cluster auto scalar enabled.
+ - Cluster autoscalar enabled.
  - Nodepool-name : `rubrikcloud`
  - Node VM size: `Standard_E8s_v5` (this can be changed as per the workload that  
    needs to be supported).
