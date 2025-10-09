@@ -1,6 +1,6 @@
 # Steps to execute EKS cluster setup script
 
-This README provides detailed instructions to run the script (rubrik_create_private_eks_cluster.py) using AWS keys and other necessary configurations. __The Kubernetes version used to setup EKS cluster in this script is `1.29`.__
+This README provides detailed instructions to run the script (rubrik_create_private_eks_cluster.py) using AWS keys and other necessary configurations. __The Kubernetes version used to setup EKS cluster in this script is `1.31`.__
 
 ## Prerequisites
 

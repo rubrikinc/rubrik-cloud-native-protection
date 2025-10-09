@@ -73,7 +73,7 @@ This documentation outlines the steps to manually create an EKS cluster and asso
 1. **Open the Amazon** [EKS console](https://console.aws.amazon.com/eks/home) and choose **Add cluster**, then **Create**.
 2. **Configure the Cluster** and then next:
     - **Name**: Enter your desired cluster name (e.g., `rubrik-eks-cluster`)
-    - **Kubernetes version**: `1.29`
+    - **Kubernetes version**: `1.31`
     - **Cluster Service Role**: Select the IAM role (e.g., `master-node-role-arn`) under the cluster service role.
     - **Cluster access**: ConfigMap
 3. **Specify networking** and then next:
@@ -148,17 +148,22 @@ This documentation outlines the steps to manually create an EKS cluster and asso
           /etc/eks/bootstrap.sh <eks-cluster-name> --b64-cluster-ca <certificate-authority> --apiserver-endpoint <api-server-endpoint>
           ```
 
-### 4. Create Auto Scaling Group
+### 4. Create Auto Scaling Groups (One per Subnet)
 
-#### a. Create Auto Scaling Group
+#### a. Create Auto Scaling Groups
+
+**Note**: Create one Auto Scaling Group per subnet for better distribution and availability. For the first Auto Scaling Group, set min_size to 1. For subsequent Auto Scaling Groups, set min_size to 0.
 
 1. **Open the Amazon** [EC2 console](https://console.aws.amazon.com/ec2/) and choose `Auto Scaling Groups`.
-2. **Create Auto Scaling group with the following details**:
-    - **Auto Scaling group name**: Enter your desired group name (e.g., `rubrik-autoscaling-group`)
+
+2. **Create Auto Scaling groups (one per subnet) with the following details**:
+    - **Auto Scaling group name**: Enter sequential names for each group (e.g., `rubrik-autoscaling-group-1`, `rubrik-autoscaling-group-2`)
     - **Launch template**: Select your launch template created above (e.g., `rubrik-launch-template (Latest version)`)
     - **VPC**: Select your VPC (e.g., `vpc-0123456789abcdef0`)
-    - **Subnets**: Select the subnets under VPC used earlier (e.g., `subnet-0123456789abcdef0`, `subnet-0123456789abcdef1`)
-    - **Set minimum/maximum size**: e.g., min=1, max=64, desired=1.
+    - **Subnets**: Select one subnet per Auto Scaling Group (e.g., `subnet-0123456789abcdef0` for first group, `subnet-0123456789abcdef1` for second group)
+    - **Set minimum/maximum size**:
+        - **First Auto Scaling Group**: min=1, max=64, desired=1
+        - **Second Auto Scaling Groups**: min=0, max=64, desired=1
     - **Add a tag**:
         - Key: kubernetes.io/cluster/\<cluster-name\> (e.g., `kubernetes.io/cluster/rubrik-eks-cluster`)
         - Value: owned

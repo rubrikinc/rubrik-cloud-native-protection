@@ -145,7 +145,7 @@ VPC_CIDR=$(curl -s http://169.254.169.254/latest/meta-data/network/interfaces/ma
 # RSC Deployment IPs
 RSC_DEPLOYMENT_IPS: List[str] = ["ip1", "ip2"]
 PUBLIC_INTERNET_CIDR = "0.0.0.0/0"
-EKSK8s_VERSION = "1.29"
+EKSK8s_VERSION = "1.31"
 NODE_TYPE = "m5.2xlarge"
 ARN_PREFIX = "arn:"
 ARN_DELIMITER = ":"
@@ -516,53 +516,63 @@ class AwsHypervisorManager:
             print(f"Error creating launch template: {str(e)}")
             raise
 
-    def create_autoscaling_group(
+    def create_autoscaling_groups_per_subnet(
             self,
-            name: str,
+            name_prefix: str,
             launch_template_id: str,
             min_size: int,
             max_size: int,
             desired_capacity: int,
-            vpc_zone_identifier: str,
+            subnet_ids: List[str],
             cluster_name: str
     ) -> None:
-        """Creates autoscaling group
+        """Creates one autoscaling group per subnet
+
+        For the first autoscaling group, uses the provided min_size.
+        For all subsequent autoscaling groups, uses min_size=0.
+        All autoscaling groups use the same desired_capacity.
 
 Args:
-    name: launch template name
+    name_prefix: prefix for autoscaling group names
     launch_template_id: launch template id
-    min_size: the minimum size of the group
-    max_size: the maximum size of the group
-    desired_capacity: initial capacity of autoscaling group at the time of creation
-    vpc_zone_identifier: A comma-separated list of subnet IDs for a virtual private cloud (VPC)
-    where instances in the Auto Scaling group can be created.
+    min_size: the minimum size of the first autoscaling group (others will have min_size=0)
+    max_size: the maximum size of each autoscaling group
+    desired_capacity: initial capacity for all autoscaling groups at the time of creation
+    subnet_ids: List of subnet IDs - one autoscaling group will be created per subnet
     cluster_name: Name of the EKS cluster
 Returns:
     None
 """
-        print(f"Creating autoscaling group {name}")
+        print(f"Creating autoscaling groups per subnet with prefix {name_prefix}")
         try:
-            self.__autoscaling_client.create_auto_scaling_group(
-                AutoScalingGroupName=name,
-                LaunchTemplate={
-                    'LaunchTemplateId': launch_template_id,
-                    'Version': '$Latest'
-                },
-                MaxSize=max_size,
-                MinSize=min_size,
-                DesiredCapacity=desired_capacity,
-                VPCZoneIdentifier=vpc_zone_identifier,
-                Tags=[
-                    {
-                        'Key': f'kubernetes.io/cluster/{cluster_name}',
-                        'Value': 'owned',
-                        'PropagateAtLaunch': True
-                    }
-                ]
-            )
-            print(f"Created autoscaling group {name}")
+            for i, subnet_id in enumerate(subnet_ids):
+                # For the first autoscaling group, use the provided min_size
+                # For subsequent groups, use min_size=0
+                current_min_size = min_size if i == 0 else 0
+                asg_name = f"{name_prefix}-autoscaling-group-{i+1}"
+
+                print(f"Creating autoscaling group {asg_name} for subnet {subnet_id}")
+                self.__autoscaling_client.create_auto_scaling_group(
+                    AutoScalingGroupName=asg_name,
+                    LaunchTemplate={
+                        'LaunchTemplateId': launch_template_id,
+                        'Version': '$Latest'
+                    },
+                    MaxSize=max_size,
+                    MinSize=current_min_size,
+                    DesiredCapacity=desired_capacity,
+                    VPCZoneIdentifier=subnet_id,  # Single subnet per ASG
+                    Tags=[
+                        {
+                            'Key': f'kubernetes.io/cluster/{cluster_name}',
+                            'Value': 'owned',
+                            'PropagateAtLaunch': True
+                        }
+                    ]
+                )
+                print(f"Created autoscaling group {asg_name} with MinSize={current_min_size}, DesiredCapacity={desired_capacity}")
         except botocore.exceptions.ClientError as e:
-            print(f"Error creating autoscaling group: {str(e)}")
+            print(f"Error creating autoscaling groups: {str(e)}")
             raise
 
 
@@ -1123,14 +1133,14 @@ def setup_customer_exocompute(
             node_type=node_type
         )
 
-        # 4. Create Auto Scaling group
-        aws_manager.create_autoscaling_group(
-            name=prefix + "-autoscaling-group",
+        # 4. Create Auto Scaling groups (one per subnet)
+        aws_manager.create_autoscaling_groups_per_subnet(
+            name_prefix=prefix,
             launch_template_id=launch_template_id,
             min_size=1,
             max_size=64,
             desired_capacity=1,
-            vpc_zone_identifier=",".join(subnet_ids),
+            subnet_ids=subnet_ids,
             cluster_name=cluster_name
         )
 
