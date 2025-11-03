@@ -29,7 +29,7 @@ Following are configuration we expect for the cluster.
  - Private Cluster: Enabled
  - Service Principal: App ID used in the exocompute onboarding step
  - Client secret: App secret obtained in exocompute onboarding step
- - Kubernetes Version: `1.29`
+ - Kubernetes Version: `1.31`
  - Only Local authentication mode is supported from RSC, we don't support Microsoft AAD based auth mechanisms for the cluster. The cluster is by default created with local auth mode.
  - Network Plugin to be used: `Azure (Azure CNI)`
  - Network Plugin mode: `Overlay`
