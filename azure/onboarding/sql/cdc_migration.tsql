@@ -1,0 +1,115 @@
+create or alter procedure [#rubrikTeardownCDC]
+    @rubrikLogin sysname
+as
+begin
+    set nocount on;
+
+    declare @backupRole sysname = 'rubrik_backup_reader_DO_NOT_DELETE';
+    declare @rubrik_schema sysname = 'rubrik';
+
+    -- Drop stored procedure(s) defined by Rubrik
+    declare @proc_name sysname;
+    declare proc_cursor cursor for
+    select name from sys.objects
+    where type = 'P' and SCHEMA_NAME(schema_id) = @rubrik_schema;
+
+    open proc_cursor;
+    fetch next from proc_cursor into @proc_name;
+    while @@FETCH_STATUS = 0
+    begin
+        exec ('DROP PROCEDURE IF EXISTS ' + @rubrik_schema + '.' + @proc_name + ';');
+        fetch next from proc_cursor into @proc_name;
+    end
+    close proc_cursor;
+    deallocate proc_cursor;
+
+    -- Drop the schema defined by Rubrik
+    exec ('DROP TRIGGER IF EXISTS [rubrik_forbid_drop_checkpoints_table_DO_NOT_DELETE] ON DATABASE');
+    exec ('DROP TABLE IF EXISTS ' + @rubrik_schema + '.schema_changelog;');
+    exec ('DROP TABLE IF EXISTS ' + @rubrik_schema + '.backup_checkpoints;');
+    exec ('DROP SCHEMA IF EXISTS ' + @rubrik_schema + ';');
+
+    -- If we're on Azure SQL Database, skip the deletion of login as we use contained users.
+    if (convert(int, serverproperty('EngineEdition')) <> 5)
+    begin
+        -- Delete Login
+        if exists (select name FROM sys.server_principals where name = @rubrikLogin)
+        begin
+            exec ('DROP LOGIN [' + @rubrikLogin + '];');
+        end
+    end
+
+    -- Delete user
+    exec ('DROP USER IF EXISTS ' + @rubrikLogin + ';');
+    -- Delete role on a best-effort basis
+    begin try
+    exec ('DROP ROLE IF EXISTS ' + @backupRole + ';');
+    end try
+    begin catch
+        -- Role deletion can fail if there are users
+        -- associated with it. We only delete the role
+        -- on a best-effort basis and ignore the error
+        -- as the other users could be in use.
+    end catch
+
+    -- Delete DDL triggers needed for CDC
+    declare @capture_instance_prefix sysname = 'rubrik_'; -- WARNING: DO NOT MODIFY
+    declare @cdc_configure_trigger sysname = 'rubrik_auto_configure_cdc_DO_NOT_DELETE';
+    exec ('DROP TRIGGER IF EXISTS ' + @cdc_configure_trigger + ' ON DATABASE;');
+
+    -- Disable CDC, if enabled, on all customer schemas and tables ============
+    if (select is_cdc_enabled from sys.databases where database_id = DB_ID()) = 0
+        return
+
+    declare @schema_name sysname;
+    declare schema_cursor cursor for
+    select ss.name
+    from sys.schemas ss
+    inner join sys.sysusers su on ss.principal_id = su.uid
+    where su.islogin = 1 and ss.name not in ('sys', 'cdc', 'guest', 'INFORMATION_SCHEMA');
+
+    open schema_cursor;
+    fetch next from schema_cursor into @schema_name;
+
+    while @@FETCH_STATUS = 0
+    begin
+        declare @table_name sysname;
+        declare table_cursor cursor FOR
+        select name from sys.tables where
+        schema_name(schema_id) = @schema_name and is_ms_shipped <> 1;
+
+        open table_cursor;
+        fetch next from table_cursor into @table_name;
+        while @@FETCH_STATUS = 0
+        begin
+            declare @capture_instance_name sysname = @capture_instance_prefix + CONVERT(VARCHAR(64), HASHBYTES('SHA2_256', @schema_name + '_' + @table_name), 2);
+            if exists (select capture_instance from cdc.change_tables where capture_instance = @capture_instance_name)
+            begin
+                exec sys.sp_cdc_disable_table @schema_name, @table_name, @capture_instance_name;
+            end
+
+            -- disable cdc even if setup was done using previous version of script
+            declare @capture_instance_name_old sysname = @capture_instance_prefix + @schema_name + '_' + @table_name;
+            if exists (select capture_instance from cdc.change_tables where capture_instance = @capture_instance_name_old)
+            begin
+                exec sys.sp_cdc_disable_table @schema_name, @table_name, @capture_instance_name_old;
+            end
+            fetch next from table_cursor into @table_name;
+        end
+        close table_cursor;
+        deallocate table_cursor;
+        fetch next from schema_cursor into @schema_name;
+    end
+    close schema_cursor;
+    deallocate schema_cursor;
+end;
+
+-- go
+-- exec [#rubrikTeardownCDC] 'backup_login_name';
+-- go
+
+-- Uncomment the preceding 3 lines and perform the following steps:
+-- 1. Replace param: 'backup_login_name' with an appropriate value.
+-- 2. Make sure you are connected to the correct Azure SQL or MI database.
+-- 3. Execute this script using an account that has admin privileges (db_owner).
+-- 4. Contact the Polaris user guide or Rubrik support in case of any errors encountered in this process.
